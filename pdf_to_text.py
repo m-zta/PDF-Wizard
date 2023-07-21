@@ -18,21 +18,35 @@ def parse_arguments():
     parser.add_argument('output_file', type=str,
                         help='The file where the extracted text will be saved.')
 
+    # The parse_args() method returns a Namespace object containing the arguments to the command line.
     args = parser.parse_args()
 
+    # Check if the input directory and output file are valid
     if not os.path.isdir(args.input_dir):
         print(f"Invalid directory path: {args.input_dir}")
+        sys.exit(1)
+    if not os.path.isdir(os.path.dirname(args.output_file)):
+        print(f"Invalid directory path: {os.path.dirname(args.output_file)}")
         sys.exit(1)
 
     return args.input_dir, args.output_file
 
 
 def extract_from_pdf(pdf_path):
-    with open(pdf_path, 'rb') as file:
-        pdf_reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+    try:
+        with open(pdf_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+    except PyPDF2.utils.PdfReadError:
+        print(f"Unable to read PDF: {pdf_path}")
+        return ""
+
+    # Check if any text was extracted
+    if not text:
+        print(f"No text found in PDF: {pdf_path}")
+
     return text
 
 
@@ -42,7 +56,8 @@ def transfer_text(input_dir, output_file):
             if filename.endswith(".pdf"):
                 pdf_path = os.path.join(input_dir, filename)
                 text = extract_from_pdf(pdf_path)
-                output.write(text)
+                if text: # Only write to file if text was extracted
+                    output.write(text)
 
     # Print success message
     print(f"Text extracted from PDFs and saved to {output_file}.")
