@@ -2,11 +2,19 @@ import os
 import sys
 import PyPDF2
 import argparse
+from tqdm import tqdm
 
 """
 Extracts the text from all the PDFs in the input directory and saves
 it to a single output file.
 """
+
+
+def is_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        header = file.read(4)
+
+    return header == b'%PDF'
 
 
 def parse_arguments():
@@ -52,12 +60,17 @@ def extract_from_pdf(pdf_path):
 
 def transfer_text(input_dir, output_file):
     with open(output_file, 'w') as output:
-        for filename in os.listdir(input_dir):
-            if filename.endswith(".pdf"):
+        for filename in tqdm(os.listdir(input_dir), desc='Processing files'):
+            file_path = os.path.join(input_dir, filename)
+            if is_pdf(file_path):
                 pdf_path = os.path.join(input_dir, filename)
                 text = extract_from_pdf(pdf_path)
-                if text: # Only write to file if text was extracted
-                    output.write(text)
+                if text:  # Only write to file if text was extracted
+                    output.write(f"Content of {filename}:\n\n {text}\n\n")
+                    output.write(
+                        "\n----------------------------------------------------------------------------------------\n")
+                    output.write(
+                        "----------------------------------------------------------------------------------------\n\n")
 
     # Print success message
     print(f"Text extracted from PDFs and saved to {output_file}.")
